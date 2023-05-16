@@ -23,7 +23,9 @@ async function authenticate(
             return next(new HttpException(401, 'Unauthorized'));
         }
 
-        const user = await User.findOne({ id: payload.id });
+        const user = await User.findOne({ id: payload.id })
+            .select('-password')
+            .exec();
 
         if (!user) return next(new HttpException(404, 'User not found'));
 

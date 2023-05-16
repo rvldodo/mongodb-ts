@@ -30,8 +30,11 @@ class UserController implements Controller {
             this.login
         );
 
+        // Get me routes
+        this.router.get(`${this.path}/get-me`, authenticate, this.getMe);
+
         // Get users routes
-        this.router.get(`${this.path}/get-me`, authenticate, this.getUser);
+        this.router.get(`${this.path}`, authenticate, this.getUsers);
     }
 
     private register = async (
@@ -40,9 +43,9 @@ class UserController implements Controller {
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const token = await this.UserService.login(req.body);
+            const user = await this.UserService.register(req.body, next);
 
-            res.status(201).send({ token });
+            res.status(201).json(user);
         } catch (error) {
             next(new HttpException(400, 'Cannot register user'));
         }
@@ -54,15 +57,15 @@ class UserController implements Controller {
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const token = await this.UserService.login(req.body);
+            const token = await this.UserService.login(req.body, next);
 
-            res.status(200).send({ token });
+            res.status(200).json({ token });
         } catch (error) {
             next(new HttpException(404, 'Cannot login'));
         }
     };
 
-    private getUser = async (
+    private getMe = async (
         req: Request,
         res: Response,
         next: NextFunction
@@ -70,6 +73,16 @@ class UserController implements Controller {
         if (!req.user) return next(new HttpException(404, 'User not found'));
 
         res.status(200).send({ user: req.user });
+    };
+
+    private getUsers = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        const users = await this.UserService.findAll(next);
+
+        res.status(200).json({ users });
     };
 }
 
