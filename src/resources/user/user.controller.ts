@@ -1,3 +1,4 @@
+import authenticate from '@/middleware/authenticated.middleware';
 import validationMiddleware from '@/middleware/validation.middleware';
 import UserService from '@/resources/user/user.service';
 import validate from '@/resources/user/user.validation';
@@ -15,40 +16,60 @@ class UserController implements Controller {
     }
 
     private initializeRouter(): void {
+        // Register routes
         this.router.post(
-            `${this.path}`,
-            validationMiddleware(validate.create),
-            this.create
+            `${this.path}/register`,
+            validationMiddleware(validate.register),
+            this.register
         );
-        this.router.get(`${this.path}`, this.getAll);
+
+        // Login routes
+        this.router.post(
+            `${this.path}/login`,
+            validationMiddleware(validate.login),
+            this.login
+        );
+
+        // Get users routes
+        this.router.get(`${this.path}/get-me`, authenticate, this.getUser);
     }
 
-    private create = async (
+    private register = async (
         req: Request,
         res: Response,
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const user = await this.UserService.create(req.body);
+            const token = await this.UserService.login(req.body);
 
-            res.status(201).send({ user });
+            res.status(201).send({ token });
         } catch (error) {
-            next(new HttpException(400, 'Cannot create user'));
+            next(new HttpException(400, 'Cannot register user'));
         }
     };
 
-    private getAll = async (
+    private login = async (
         req: Request,
         res: Response,
         next: NextFunction
     ): Promise<Response | void> => {
         try {
-            const users = await this.UserService.findAll();
-            console.log(users);
-            res.status(200).send({ users });
+            const token = await this.UserService.login(req.body);
+
+            res.status(200).send({ token });
         } catch (error) {
-            next(new HttpException(400, 'Users not found or empty'));
+            next(new HttpException(404, 'Cannot login'));
         }
+    };
+
+    private getUser = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<Response | void> => {
+        if (!req.user) return next(new HttpException(404, 'User not found'));
+
+        res.status(200).send({ user: req.user });
     };
 }
 

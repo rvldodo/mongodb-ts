@@ -1,41 +1,42 @@
-import User from '@/resources/user/user.interface';
-import userModel from '@/resources/user/user.model';
+import UserInterface from '@/resources/user/user.interface';
+import User from '@/resources/user/user.model';
+import token from '@/utils/token';
 
 class UserService {
-    private user = userModel;
+    private user = User;
 
     /**
-     * create a new user
+     * Register a new user
      */
-    public async create(data: User): Promise<User> {
+    public async register(data: UserInterface): Promise<string | Error> {
         try {
-            const duplicate = await this.duplicate(data.email);
+            const duplicate = await this.user.findOne({ email: data.email });
+            if (duplicate) throw new Error('User already registered');
 
             const user = await this.user.create(data);
-            return user;
+            const accessToken = token.generateToken(user);
+            return accessToken;
         } catch (error) {
             throw new Error('Unable to create user');
         }
     }
 
     /**
-     * check duplicate user
+     * Login user
      */
-    private async duplicate(email: string): Promise<void> {
-        const user = await this.user.findOne({ email });
-        if (user) throw new Error('User or email already exists');
-    }
-
-    /**
-     * get all users
-     */
-    public async findAll(): Promise<User[]> {
+    public async login(data: UserInterface): Promise<string | Error> {
         try {
-            const users = await this.user.find();
-            console.log(users);
-            return users;
+            const user = await this.user.findOne({ email: data.email });
+
+            if (!user) throw new Error('User not found');
+
+            const loginToken = (await user?.isValidPassword(data.password))
+                ? token.generateToken(data)
+                : new Error('Invalid password');
+
+            return loginToken;
         } catch (error) {
-            throw new Error('Users empty or not found');
+            throw new Error('Unable to login');
         }
     }
 }

@@ -1,11 +1,18 @@
-import Joi, { string } from 'joi';
+import Joi from 'joi';
 
-const create = Joi.object({
+const register = Joi.object({
     firstName: Joi.string().required(),
     lastName: Joi.string().required(),
-    email: Joi.string().required(),
     age: Joi.number().required().min(12),
     hobby: Joi.array(),
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
+    role: Joi.number(),
 });
 
-export default { create };
+const login = Joi.object({
+    email: Joi.string().email().required(),
+    password: Joi.string().min(6).required(),
+});
+
+export default { register, login };
